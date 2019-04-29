@@ -43,10 +43,10 @@ module PTBot
 
     def open_issues
       @log.debug "Listing issues .."
-      issues = client.issues(REPO, state: 'open')
+      issues = client.issues(@repo, state: 'open')
       @log.debug format("%d open issues", issues.length)
       issues.to_a.map { |resource| # Sawyer::Resource
-        Issue.new(resource.to_h, REPO, @log)
+        Issue.new(resource.to_h, @repo, @log)
       }
     end
 

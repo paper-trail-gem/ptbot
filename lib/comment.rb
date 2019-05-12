@@ -27,7 +27,7 @@ module PTBot
     # Second, it's a nice way to prevent the bot from going wild and spamming
     # an issue (it'll stop when it's made this many comments [not great, but
     # better than no safeguard]).
-    ESTABLISHED_CONVERSATION = 5 # Five comments
+    ESTABLISHED_CONVERSATION = 3 # Number of comments
 
     INTRO = "Thanks for the contribution! It looks like there's something missing though:"
     INSTRUCTIONS = <<~EOS
@@ -56,10 +56,10 @@ module PTBot
 
     def perform
       @log.debug format("Issue has %d comments", comments.length)
-      if comments.length > ESTABLISHED_CONVERSATION
+      if comments.length >= ESTABLISHED_CONVERSATION
         @log.debug(
           format(
-            'Skipping issue with more than %d comments',
+            'Skipping issue with %d or more comments',
             ESTABLISHED_CONVERSATION
           )
         )

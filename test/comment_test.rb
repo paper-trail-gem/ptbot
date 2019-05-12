@@ -15,7 +15,6 @@ module PTBot
       client.expect(
         :issue_comments,
         [
-          { id: 6, user: { login: "alice" }},
           { id: 7, user: { login: Comment::BOT_USERNAME }},
           { id: 8, user: { login: "bob" }}
         ],

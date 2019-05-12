@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require 'octokit'
+require 'issues/issue'
+
 module PTBot
   # Add or edit existing comment.
   #
@@ -36,7 +39,7 @@ module PTBot
     def initialize(client, issue, log, repo)
       raise TypeError unless client.is_a?(Octokit::Client)
       @client = client
-      raise TypeError unless issue.is_a?(Issue)
+      raise TypeError unless issue.is_a?(Issues::Issue)
       @issue = issue
       raise TypeError unless log.is_a?(Logger)
       @log = log

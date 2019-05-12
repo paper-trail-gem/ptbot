@@ -22,6 +22,13 @@ module PTBot
   # }
   # ```
   class Comment
+    # Bot should skip established conversations, for two reasons. First, if a
+    # bunch of humans are already talking, nobody needs a bot (sorry, bot).
+    # Second, it's a nice way to prevent the bot from going wild and spamming
+    # an issue (it'll stop when it's made this many comments [not great, but
+    # better than no safeguard]).
+    ESTABLISHED_CONVERSATION = 5 # Five comments
+
     INTRO = "Thanks for the contribution! It looks like there's something missing though:"
     INSTRUCTIONS = <<~EOS
       Due to limited volunteer time, please ask usage questions on [StackOverflow][2].
@@ -48,6 +55,17 @@ module PTBot
     end
 
     def perform
+      @log.debug format("Getting comments for issue %d", issue_number)
+      @log.debug format("Issue has %d comments", comments.length)
+      if comments.length > ESTABLISHED_CONVERSATION
+        @log.debug(
+          format(
+            'Skipping issue with more than %d comments',
+            ESTABLISHED_CONVERSATION
+          )
+        )
+        return
+      end
       comment_number = first_extant_comment_by_me.to_h.fetch(:id)
       comment_number.nil? ? add : edit(comment_number)
     end
@@ -79,6 +97,10 @@ module PTBot
       ].join(PARAGRAPH_DELIMITER)
     end
 
+    def comments
+      @_comments ||= @client.issue_comments(@repo, issue_number)
+    end
+
     def edit(comment_number)
       @log.debug format('Editing existing comment %s %d', @repo, comment_number)
       new_body = body(@issue.omissions)
@@ -94,7 +116,7 @@ module PTBot
 
     def first_extant_comment_by_me
       @log.debug format('Did I already comment on %s #%s?', @repo, issue_number)
-      @client.issue_comments(@repo, issue_number).find { |resource|
+      comments.find { |resource|
         resource.to_h.fetch(:user).fetch(:login) == BOT_USERNAME
       }
     end

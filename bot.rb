@@ -51,7 +51,7 @@ module PTBot
       issues = client.issues(@repo, state: 'open')
       @log.debug format("%d open issues", issues.length)
       issues.to_a.map { |resource| # Sawyer::Resource
-        Issues::Factory.build(resource.to_h)
+        Issues::Factory.new.build(resource.to_h)
       }
     end
 

@@ -55,7 +55,6 @@ module PTBot
     end
 
     def perform
-      @log.debug format("Getting comments for issue %d", issue_number)
       @log.debug format("Issue has %d comments", comments.length)
       if comments.length > ESTABLISHED_CONVERSATION
         @log.debug(
@@ -66,7 +65,7 @@ module PTBot
         )
         return
       end
-      comment_number = first_extant_comment_by_me.to_h.fetch(:id)
+      comment_number = id_of_my_first_comment
       comment_number.nil? ? add : edit(comment_number)
     end
 
@@ -97,8 +96,12 @@ module PTBot
       ].join(PARAGRAPH_DELIMITER)
     end
 
+    # Extant comments
     def comments
-      @_comments ||= @client.issue_comments(@repo, issue_number)
+      @_comments ||= begin
+        @log.debug format("Getting comments for issue %d", issue_number)
+        @client.issue_comments(@repo, issue_number)
+      end
     end
 
     def edit(comment_number)
@@ -114,11 +117,12 @@ module PTBot
       end
     end
 
-    def first_extant_comment_by_me
+    def id_of_my_first_comment
       @log.debug format('Did I already comment on %s #%s?', @repo, issue_number)
-      comments.find { |resource|
+      my_comment = comments.find { |resource|
         resource.to_h.fetch(:user).fetch(:login) == BOT_USERNAME
       }
+      my_comment.nil? ? nil : my_comment.fetch(:id)
     end
 
     def is_a_comment?(obj)

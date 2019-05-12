@@ -33,12 +33,15 @@ module PTBot
     PARAGRAPH_DELIMITER = "\n\n"
     BOT_USERNAME = "paper-trail-bot"
 
-    def initialize(client, issue, log)
+    def initialize(client, issue, log, repo)
       raise TypeError unless client.is_a?(Octokit::Client)
       @client = client
       raise TypeError unless issue.is_a?(Issue)
       @issue = issue
+      raise TypeError unless log.is_a?(Logger)
       @log = log
+      raise TypeError unless repo.is_a?(String)
+      @repo = repo
     end
 
     def perform
@@ -51,7 +54,7 @@ module PTBot
     def add
       @log.debug 'Adding new comment'
       result = @client.add_comment(
-        repo,
+        @repo,
         issue_number,
         body(@issue.omissions)
       )
@@ -74,9 +77,9 @@ module PTBot
     end
 
     def edit(comment_number)
-      @log.debug format('Editing existing comment %s %d', repo, comment_number)
+      @log.debug format('Editing existing comment %s %d', @repo, comment_number)
       new_body = body(@issue.omissions)
-      result = @client.update_comment(repo, comment_number, new_body)
+      result = @client.update_comment(@repo, comment_number, new_body)
       if is_a_comment?(result)
         @log.debug 'Comment updated'
       else
@@ -87,8 +90,8 @@ module PTBot
     end
 
     def first_extant_comment_by_me
-      @log.debug format('Did I already comment on %s #%s?', repo, issue_number)
-      @client.issue_comments(repo, issue_number).find { |resource|
+      @log.debug format('Did I already comment on %s #%s?', @repo, issue_number)
+      @client.issue_comments(@repo, issue_number).find { |resource|
         resource.to_h.fetch(:user).fetch(:login) == BOT_USERNAME
       }
     end
@@ -105,10 +108,6 @@ module PTBot
       omissions.map { |omission|
         format('- %s: %s', omission.attribute, omission.message)
       }.join("\n")
-    end
-
-    def repo
-      @issue.repo
     end
   end
 end

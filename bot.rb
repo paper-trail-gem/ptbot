@@ -7,22 +7,27 @@ require 'octokit'
 
 $LOAD_PATH << File.join(File.expand_path(__dir__), 'lib')
 require 'comment'
-require 'issue'
+require 'issues/factory'
 
 module PTBot
   # https://developer.github.com/v3/#rate-limiting
   class Bot
+    REPO_NAME_PATTERN = /\w+\/\w+/.freeze
+
     def initialize
       @github_api_token = ENV.fetch("GITHUB_API_TOKEN")
       @log = Logger.new(STDOUT)
       @repo = ENV.fetch("REPO_NAME")
+      unless REPO_NAME_PATTERN.match?(@repo)
+        raise TypeError, 'Invalid repo name: ' + @repo
+      end
     end
 
     def run
       log_current_user
       incomplete_issues.each do |issue|
         @log.debug 'comment on incomplete issue'
-        Comment.new(client, issue, @log).perform
+        Comment.new(client, issue, @log, @repo).perform
       end
       @log.debug "Done. Bot out."
     end
@@ -46,7 +51,7 @@ module PTBot
       issues = client.issues(@repo, state: 'open')
       @log.debug format("%d open issues", issues.length)
       issues.to_a.map { |resource| # Sawyer::Resource
-        Issue.new(resource.to_h, @repo, @log)
+        Issues::Factory.build(resource.to_h)
       }
     end
 

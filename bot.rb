@@ -60,13 +60,15 @@ module PTBot
     # Open issues, in descending order of creation date, up to `MAX_ISSUES`.
     def open_issues
       @log.debug "Listing issues .."
-      issues = client.issues(
+      issues_and_prs = client.issues(
         @repo,
         direction: 'desc',
         sort: 'created',
         state: 'open'
       )
-      @log.debug format("%d open issues", issues.length)
+      @log.debug format("%d open issues and PRs", issues_and_prs.length)
+      issues = issues_and_prs.reject { |i| i.key?(:pull_request) }
+      @log.debug format("%d open issues (max %d)", issues.length, MAX_ISSUES)
       issues.to_a.take(MAX_ISSUES).map { |resource| # Sawyer::Resource
         Issues::Factory.new.build(resource.to_h)
       }

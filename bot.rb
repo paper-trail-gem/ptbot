@@ -12,6 +12,10 @@ require 'issues/factory'
 module PTBot
   # https://developer.github.com/v3/#rate-limiting
   class Bot
+    # Limit number of issues parsed as a precaution (new issues considered
+    # first). We may increase this later, but we don't want a bot running wild.
+    MAX_ISSUES = 10
+
     REPO_NAME_PATTERN = /\w+\/\w+/.freeze
 
     def initialize
@@ -35,7 +39,14 @@ module PTBot
     private
 
     def client
-      @_client ||= Octokit::Client.new(access_token: @github_api_token)
+      @_client ||= Octokit::Client.new(
+        access_token: @github_api_token,
+
+        # When the bot looks to see if it has already commented on an issue,
+        # it's important that it looks at every existing comment.
+        # https://github.com/octokit/octokit.rb#auto-pagination
+        auto_paginate: true
+      )
     end
 
     def client_user_login
@@ -46,11 +57,17 @@ module PTBot
       open_issues.reject(&:complete?)
     end
 
+    # Open issues, in descending order of creation date, up to `MAX_ISSUES`.
     def open_issues
       @log.debug "Listing issues .."
-      issues = client.issues(@repo, state: 'open')
+      issues = client.issues(
+        @repo,
+        direction: 'desc',
+        sort: 'created',
+        state: 'open'
+      )
       @log.debug format("%d open issues", issues.length)
-      issues.to_a.map { |resource| # Sawyer::Resource
+      issues.to_a.take(MAX_ISSUES).map { |resource| # Sawyer::Resource
         Issues::Factory.new.build(resource.to_h)
       }
     end

@@ -30,7 +30,7 @@ module PTBot
     def run
       log_current_user
       incomplete_issues.each do |issue|
-        @log.debug 'comment on incomplete issue'
+        @log.debug format("issue %d: is incomplete", issue.number)
         Comment.new(client, issue, @log, @repo).perform
       end
       @log.debug "Done. Bot out."

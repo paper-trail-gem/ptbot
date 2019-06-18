@@ -27,7 +27,7 @@ module PTBot
     # Second, it's a nice way to prevent the bot from going wild and spamming
     # an issue (it'll stop when it's made this many comments [not great, but
     # better than no safeguard]).
-    ESTABLISHED_CONVERSATION = 3 # Number of comments
+    ESTABLISHED_CONVERSATION = 3 # Number of comments (original post not counted)
 
     INTRO = "Thanks for the contribution! It looks like there's something missing though:"
     INSTRUCTIONS = <<~EOS
@@ -55,9 +55,9 @@ module PTBot
     end
 
     def perform
-      @log.debug format("Issue has %d comments", comments.length)
+      log_debug format("has %d comments", comments.length)
       if comments.length >= ESTABLISHED_CONVERSATION
-        @log.debug(
+        log_debug(
           format(
             'Skipping issue with %d or more comments',
             ESTABLISHED_CONVERSATION
@@ -72,14 +72,14 @@ module PTBot
     private
 
     def add
-      @log.debug 'Adding new comment'
+      log_debug 'Adding new comment'
       result = @client.add_comment(
         @repo,
         issue_number,
         body(@issue.omissions)
       )
       if is_a_comment?(result)
-        @log.debug 'Comment added'
+        log_debug 'Comment added'
       else
         error = format('Failed to add comment: result: %s', result.inspect)
         @log.error(error)
@@ -99,17 +99,17 @@ module PTBot
     # Extant comments
     def comments
       @_comments ||= begin
-        @log.debug format("Getting comments for issue %d", issue_number)
+        log_debug "Getting comments"
         @client.issue_comments(@repo, issue_number)
       end
     end
 
     def edit(comment_number)
-      @log.debug format('Editing existing comment %s %d', @repo, comment_number)
+      log_debug format('Editing existing comment %s %d', @repo, comment_number)
       new_body = body(@issue.omissions)
       result = @client.update_comment(@repo, comment_number, new_body)
       if is_a_comment?(result)
-        @log.debug 'Comment updated'
+        log_debug 'Comment updated'
       else
         error = format('Failed to update comment: result: %s', result.inspect)
         @log.error(error)
@@ -118,9 +118,11 @@ module PTBot
     end
 
     def id_of_my_first_comment
-      @log.debug format('Did I already comment on %s #%s?', @repo, issue_number)
+      log_debug "Did I already comment?"
       my_comment = comments.find { |resource|
-        resource.to_h.fetch(:user).fetch(:login) == BOT_USERNAME
+        login = resource.to_h.fetch(:user).fetch(:login)
+        log_debug(format("Comment by %s", login))
+        login == BOT_USERNAME
       }
       my_comment.nil? ? nil : my_comment.fetch(:id)
     end
@@ -131,6 +133,10 @@ module PTBot
 
     def issue_number
       @issue.number
+    end
+
+    def log_debug(message)
+      @log.debug format("issue %d: %s", issue_number, message)
     end
 
     def markdown_list_of_omissions(omissions)

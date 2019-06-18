@@ -72,19 +72,20 @@ module PTBot
     private
 
     def add
-      log_debug 'Adding new comment'
-      result = @client.add_comment(
-        @repo,
-        issue_number,
-        body(@issue.omissions)
-      )
-      if is_a_comment?(result)
-        log_debug 'Comment added'
-      else
-        error = format('Failed to add comment: result: %s', result.inspect)
-        @log.error(error)
-        raise error
-      end
+      nil # temporary no-op while troubleshooting spam issue
+      # log_debug 'Adding new comment'
+      # result = @client.add_comment(
+      #   @repo,
+      #   issue_number,
+      #   body(@issue.omissions)
+      # )
+      # if is_a_comment?(result)
+      #   log_debug 'Comment added'
+      # else
+      #   error = format('Failed to add comment: result: %s', result.inspect)
+      #   @log.error(error)
+      #   raise error
+      # end
     end
 
     # Given array of omissions, return markdown string.
@@ -121,9 +122,10 @@ module PTBot
       log_debug "Did I already comment?"
       my_comment = comments.find { |resource|
         login = resource.to_h.fetch(:user).fetch(:login)
-        log_debug(format("Comment by %s", login))
+        log_debug(format("%s == %s: %s", login, BOT_USERNAME, (login == BOT_USERNAME).inspect))
         login == BOT_USERNAME
       }
+      log_debug format("my_comment: %s", my_comment.inspect)
       my_comment.nil? ? nil : my_comment.fetch(:id)
     end
 

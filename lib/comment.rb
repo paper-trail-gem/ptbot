@@ -66,6 +66,7 @@ module PTBot
         return
       end
       comment_number = id_of_my_first_comment
+      log_debug format("id of my first comment: %d", comment_number.inspect)
       comment_number.nil? ? add : edit(comment_number)
     end
 

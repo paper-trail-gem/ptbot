@@ -66,7 +66,7 @@ module PTBot
         return
       end
       comment_number = id_of_my_first_comment
-      log_debug format("id of my first comment: %d", comment_number.inspect)
+      log_debug format("id of my first comment: %s", comment_number.inspect)
       comment_number.nil? ? add : edit(comment_number)
     end
 
@@ -127,7 +127,12 @@ module PTBot
         login == BOT_USERNAME
       }
       log_debug format("my_comment: %s", my_comment.inspect)
-      my_comment.nil? ? nil : my_comment.fetch(:id)
+      if my_comment.nil?
+        log_debug "No comment by me found"
+        nil
+      else
+        my_comment.to_h.fetch(:id)
+      end
     end
 
     def is_a_comment?(obj)
